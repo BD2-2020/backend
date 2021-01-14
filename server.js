@@ -65,14 +65,20 @@ app.get('/api/cars', (req, res) => {
     });
 });
 
-app.get('/api/available_cars', (req, res) => {
-    client.query('SELECT "CAR"."ID", "PRODUCTION_YEAR", "CAR_MODEL_ID", "CAR_BRAND_ID", "CAR_CLASS_ID" FROM "CAR" ' +
-        'JOIN "CAR_MODEL" ON "CAR"."CAR_MODEL_ID" = "CAR_MODEL"."ID" WHERE "RESERVATION_ID" ISNULL OR "RESERVATION_ID" NOT IN (SELECT "ID" FROM "RESERVATION");', (err, qres) => {
-        if (err) {
-            res.send({message: []});
-            return;
-        }
-        res.send({message: qres.rows});
+app.get('/api/available_cars/:from/:to', (req, res) => {
+    const q = 'SELECT "CAR"."ID", "PRODUCTION_YEAR", "CAR_MODEL_ID", "CAR_BRAND_ID", "CAR_CLASS_ID" FROM "CAR" ' +
+    'JOIN "CAR_MODEL" ON "CAR"."CAR_MODEL_ID" = "CAR_MODEL"."ID" WHERE "RESERVATION_ID" ISNULL OR "RESERVATION_ID" NOT IN ' + 
+    '(SELECT "ID" FROM "RESERVATION" WHERE ("START_DATE" <= \'' + req.params['from'] + '\' AND "END_DATE" >= \'' + req.params['from'] + '\') ' + 
+    ' OR ("START_DATE" >= \'' + req.params['from'] + '\' AND "END_DATE" <= \'' + req.params['to'] + '\'));';
+    console.log(q);
+    client.query(q, 
+        (err, qres) => {
+            if (err) {
+                console.log(err);
+                res.send({message: []});
+                return;
+            }
+            res.send({message: qres.rows});
     });
 });
 
