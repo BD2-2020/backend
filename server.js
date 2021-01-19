@@ -53,8 +53,8 @@ app.get('/api/cars', (req, res) => {
 
 app.get('/api/available_cars/:from/:to', (req, res) => {
     const q = 'SELECT "CAR"."ID", "PRODUCTION_YEAR", "CAR_MODEL_ID", "CAR_BRAND_ID", "CAR_CLASS_ID" FROM "CAR" ' +
-    'JOIN "CAR_MODEL" ON "CAR"."CAR_MODEL_ID" = "CAR_MODEL"."ID" WHERE "RESERVATION_ID" ISNULL OR "RESERVATION_ID" NOT IN ' + 
-    '(SELECT "ID" FROM "RESERVATION" WHERE ("START_DATE" <= \'' + req.params['from'] + '\' AND "END_DATE" >= \'' + req.params['from'] + '\') ' + 
+    'JOIN "CAR_MODEL" ON "CAR"."CAR_MODEL_ID" = "CAR_MODEL"."ID" WHERE "CAR"."ID" NOT IN ' + 
+    '(SELECT "CAR_ID" FROM "RESERVATION" WHERE ("START_DATE" <= \'' + req.params['from'] + '\' AND "END_DATE" >= \'' + req.params['from'] + '\') ' + 
     ' OR ("START_DATE" >= \'' + req.params['from'] + '\' AND "END_DATE" <= \'' + req.params['to'] + '\'));';
     client.query(q, 
         (err, qres) => {
@@ -201,22 +201,17 @@ app.post('/api/login', (req, res) => {
 
 app.post('/api/add_reservation', (req, res) => {
     const reservation = req.body;
-    client.query('INSERT INTO "RESERVATION" ("CREATED_AT", "START_DATE", "END_DATE", "PRICE", "EXPIRES", "CUSTOMER_ID") ' +
-        insertValuesString([date(), reservation.startDate, reservation.endDate, reservation.price, reservation.endDate, reservation.customerID]), (err, qres) => {
-            client.query('SELECT MAX("ID") FROM "RESERVATION";', (err, qres) => {
-                const reservationID = qres.rows[0]["max"];
-                const q = 'UPDATE "CAR" SET "RESERVATION_ID" = \'' + reservationID + '\' WHERE "ID" = \'' + reservation.carID + '\';'
-                client.query(q, (err, qres) => {
-                    res.send({message: 'Success'});
-                });
-            });
+    client.query('INSERT INTO "RESERVATION" ("CREATED_AT", "START_DATE", "END_DATE", "PRICE", "EXPIRES", "CUSTOMER_ID", "CAR_ID") ' +
+        insertValuesString([date(), reservation.startDate, reservation.endDate, reservation.price, reservation.endDate, reservation.customerID,
+        reservation.carID]), (err, qres) => {
+            res.send({message: 'Success'});
         });
 });
 
 app.post('/api/add_rental', (req, res) => {
     const reservationID = req.body.ID;
     const rentalStart = req.body.startDate;
-    const q = 'SELECT ' + formatDate("END_DATE") + ', "PRICE", "CUSTOMER_ID" FROM "RESERVATION" WHERE "ID" = \'' + reservationID + '\';';
+    const q = 'SELECT ' + formatDate("END_DATE") + ', "PRICE", "CUSTOMER_ID", "CAR_ID" FROM "RESERVATION" WHERE "ID" = \'' + reservationID + '\';';
     client.query(q, (err, qres) => {
         const reservation = qres.rows[0];
         const q = 'INSERT INTO "RENTAL" ("CREATED_AT", "START_DATE", "END_DATE", "PRICE", "CUSTOMER_ID") ' + 
@@ -224,8 +219,11 @@ app.post('/api/add_rental', (req, res) => {
         client.query(q, (err, qres) => {
                 client.query('SELECT MAX("ID") FROM "RENTAL";', (err, qres) => {
                     const rentalID = qres.rows[0]['max'];
-                    client.query('UPDATE "CAR" SET "RENTAL_ID" = \'' + rentalID + '\' WHERE "RESERVATION_ID" = \'' + reservationID + '\';', (err, qres) => {
-                        res.send({message: 'Success'});
+                    client.query('UPDATE "CAR" SET "RENTAL_ID" = \'' + rentalID + '\' WHERE "ID" = \'' + reservation['CAR_ID'] + '\';', (err, qres) => {
+                        client.query('INSERT INTO "RESERVATION_STATUS" ("STATUS", "RESERVATION_ID") ' + 
+                        insertValuesString(['Wypozyczone', reservationID]), (err, qres) => {
+                            res.send({message: 'Success'});
+                        })
                     });
                 });
             });
@@ -236,10 +234,11 @@ app.get('/api/reservations/:id', (req, res) => {
     const q = 'SELECT "CAR_MODEL_ID", "CAR_BRAND_ID", "RESERVATION"."ID", ' + formatDate("START_DATE") + ', ' + 
     formatDate("END_DATE") + ', "PRICE" FROM "CAR" ' +
     'JOIN "CAR_MODEL" ON "CAR"."CAR_MODEL_ID" = "CAR_MODEL"."ID" ' + 
-    'JOIN "RESERVATION" ON "CAR"."RESERVATION_ID" = "RESERVATION"."ID" ' + 
-    'WHERE "CUSTOMER_ID" = \'' + req.params['id'] + '\' AND "RENTAL_ID" ISNULL;';
+    'JOIN "RESERVATION" ON "CAR"."ID" = "RESERVATION"."CAR_ID" ' + 
+    'WHERE "CUSTOMER_ID" = \'' + req.params['id'] + '\' AND "RESERVATION"."ID" NOT IN ' + 
+    '(SELECT "RESERVATION_ID" FROM "RESERVATION_STATUS" WHERE "STATUS" = \'Wypozyczone\');';
     client.query(q, (err, qres) => {
-            res.send ({message: qres.rows});
+        res.send ({message: qres.rows});
     });
 });
 
@@ -260,9 +259,9 @@ app.post('/api/end_rental', (req, res) => {
 });
 
 app.post('/api/cancel_reservation', (req, res) => {
-    client.query('DELETE FROM "RESERVATION" WHERE "ID" = \'' + req.body.ID + '\';'), (err, qres) => {
+    client.query('DELETE FROM "RESERVATION" WHERE "ID" = \'' + req.body.ID + '\';', (err, qres) => {
         res.send({message: 'Success'});
-    }
+    });
 });
 
 
