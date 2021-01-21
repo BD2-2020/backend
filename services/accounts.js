@@ -89,7 +89,7 @@ module.exports.login = function(client, req, res) {
                         WHERE "EMPLOYEE_ID" = $1 AND "ROLE_ID" IN (
                             SELECT "ID" FROM "ROLE" 
                             WHERE "NAME" = \'Administrator\'
-                        );`).then((err, qres) => {
+                        );`, [id]).then((qres) => {
                             if (qres.rows.length > 0) {
                                 res.send({message: {
                                     email: id,
