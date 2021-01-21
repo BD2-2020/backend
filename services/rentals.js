@@ -38,12 +38,13 @@ module.exports.add_reservation = function(client, req, res) {
 module.exports.add_rental = function(client, req, res) {
     const reservationID = req.body.ID;
     const rentalStart = req.body.startDate;
+    let reservation;
 
     client.query(
         `SELECT ${formatDate("END_DATE")}, "PRICE", "CUSTOMER_ID", "CAR_ID" FROM "RESERVATION" WHERE "ID" = $1;`,
         [reservationID]
     ).then((qres) => {
-        const reservation = qres.rows[0];
+        reservation = qres.rows[0];
         return client.query(
             `INSERT INTO "RENTAL" ("CREATED_AT", "START_DATE", "END_DATE", "PRICE", "CUSTOMER_ID")
              VALUES($1, $2, $3, $4, $5)`,
@@ -54,7 +55,7 @@ module.exports.add_rental = function(client, req, res) {
     }).then((qres) => {
         const rentalID = qres.rows[0]['max'];
         return client.query(
-            'UPDATE "CAR" SET "RENTAL_ID" = $1 WHERE "ID" = $2;'
+            'UPDATE "CAR" SET "RENTAL_ID" = $1 WHERE "ID" = $2;',
             [rentalID, reservation['CAR_ID']]
         );
     }).then(() => {

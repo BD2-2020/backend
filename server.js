@@ -48,8 +48,8 @@ app.post('/api/add_customer',   (req, res) => { add_customer(client, req, res) }
 app.get('/api/classes',         (req, res) => { get_car_classes(client, req, res) });
 app.get('/api/brands',          (req, res) => { get_car_brands(client, req, res) });
 app.get('/api/cars',            (req, res) => { get_cars(client, req, res) });
-app.get('/api/add_car',         (req, res) => { add_car(client, req, res) });
-app.get('/api/remove_car',      (req, res) => { remove_car(client, req, res) });
+app.post('/api/add_car',         (req, res) => { add_car(client, req, res) });
+app.post('/api/remove_car',      (req, res) => { remove_car(client, req, res) });
 app.get('/api/models/:id',      (req, res) => { get_model_by_id(client, req, res) });
 
 
