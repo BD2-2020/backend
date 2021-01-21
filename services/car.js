@@ -29,7 +29,7 @@ module.exports.add_car = function(client, req, res) {
         `INSERT INTO "CAR" ("ID", "PRODUCTION_YEAR", "NUMBER_PLATE", "CAR_MODEL_ID")
          VALUES ($1, $2, $3, $4)`,
         [req.body.VIN, req.body.year, req.body.numberPlate, req.body.model]
-    ).then(() => {
+    ).then((qres) => {
         res.send({message: 'Success'});
     });
 }
