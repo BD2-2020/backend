@@ -41,29 +41,30 @@ module.exports.add_customer = function(client, req, res) {
 module.exports.add_employee = function(client, req, res) {
     const employee = req.body;
 
-    const isRegistered = isEmailRegistered(client, employee.email);
-    if (!isRegistered) {
-        client.query(`INSERT INTO "ADDRESS" ("ADDRESS1", "ADDRESS2", "POSTAL_CODE", "CITY") VALUES($1, $2, $3, $4);`,
-                     [employee.address1, employee.address2, employee.postalCode,employee.city]
-        ).then(() => {
-            return client.query('SELECT "ID" FROM "ADDRESS" WHERE "ID"=(SELECT MAX("ID") FROM "ADDRESS");');
-        }).then((resp) => {
-            const addressID = resp.rows[0]["ID"];
-            return client.query(
-                `INSERT INTO "EMPLOYEE" ("ID", "PASSWORD", "FIRST_NAME", "LAST_NAME", 
-                                         "PESEL", "SALARY", "ACCOUNT_NO", "ADDRESS_ID") 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`, 
-                [employee.email, employee.password, employee.firstName, employee.lastName, 
-                employee.PESEL, employee.salary, employee.accountNumber, addressID]);
-        }).then(() => {
-            return client.query(`INSERT INTO "EMPLOYEE_ROLE" ("ROLE_ID", "EMPLOYEE_ID") VALUES($1, $2)`, 
-                [employee.role.id, employee.email]);
-        }).then(() => {
-            res.send({message: 'Success'});
-        });
-    } else {
-        res.send({mesage: 'Error'});
-    }
+    isEmailRegistered(client, employee.email).then((isRegistered) => {
+        if (!isRegistered) {
+            client.query(`INSERT INTO "ADDRESS" ("ADDRESS1", "ADDRESS2", "POSTAL_CODE", "CITY") VALUES($1, $2, $3, $4);`,
+                        [employee.address1, employee.address2, employee.postalCode,employee.city]
+            ).then(() => {
+                return client.query('SELECT "ID" FROM "ADDRESS" WHERE "ID"=(SELECT MAX("ID") FROM "ADDRESS");');
+            }).then((resp) => {
+                const addressID = resp.rows[0]["ID"];
+                return client.query(
+                    `INSERT INTO "EMPLOYEE" ("ID", "PASSWORD", "FIRST_NAME", "LAST_NAME", 
+                                            "PESEL", "SALARY", "ACCOUNT_NO", "ADDRESS_ID") 
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`, 
+                    [employee.email, employee.password, employee.firstName, employee.lastName, 
+                    employee.PESEL, employee.salary, employee.accountNumber, addressID]);
+            }).then(() => {
+                return client.query(`INSERT INTO "EMPLOYEE_ROLE" ("ROLE_ID", "EMPLOYEE_ID") VALUES($1, $2)`, 
+                    [employee.role.id, employee.email]);
+            }).then(() => {
+                res.send({message: 'Success'});
+            });
+        } else {
+            res.send({mesage: 'Error'});
+        }
+    });
 };
 
 module.exports.login = function(client, req, res) {

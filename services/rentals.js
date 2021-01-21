@@ -89,7 +89,7 @@ module.exports.get_rental = function(client, req, res) {
         JOIN "CAR_MODEL" ON "CAR"."CAR_MODEL_ID" = "CAR_MODEL"."ID"
         JOIN "RENTAL" ON "CAR"."RENTAL_ID" = "RENTAL"."ID" 
         WHERE "CUSTOMER_ID" = $1;`, [req.params['id']]
-    ).then((err, qres) => {
+    ).then((qres) => {
         res.send({message: qres.rows});
     });
 };
@@ -98,7 +98,7 @@ module.exports.end_rental = function(client, req, res) {
     client.query(
         'UPDATE "RENTAL" SET "END_DATE" = $1 WHERE "ID" = $2;',
         [req.body.endDate, req.body.ID]
-    ).then((err, qres) => {
+    ).then(() => {
         res.send({message: 'Success'});
     });
 };
