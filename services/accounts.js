@@ -5,7 +5,7 @@ function date() {
 
 async function isEmailRegistered(client, email) {
     const resp = await client.query(
-        `SELECT "ID" FROM "EMPLOYEE" UNION SELECT "ID" FROM "CUSTOMER" WHERE "ID"=$1`, 
+        `SELECT "ID" FROM "EMPLOYEE" WHERE "ID"=$1 UNION SELECT "ID" FROM "CUSTOMER" WHERE "ID"=$1`, 
         [email]
     );
 
